@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>投资房收益计算器</title>
+</head>
+<body>
+    <h1>投资房收益计算器</h1>
+    <form id="calculator">
+        <label for="downPayment">首付金额 (AUD):</label>
+        <input type="number" id="downPayment" name="downPayment" required><br><br>
+
+        <label for="loanRatio">贷款比例 (%):</label>
+        <input type="number" id="loanRatio" name="loanRatio" required><br><br>
+
+        <label for="loanYears">贷款年限 (年):</label>
+        <input type="number" id="loanYears" name="loanYears" required><br><br>
+
+        <label for="monthlyRepayment">月还款额 (AUD):</label>
+        <input type="number" id="monthlyRepayment" name="monthlyRepayment" required><br><br>
+
+        <label for="propertyValueIncrease">房屋增值比例 (%):</label>
+        <input type="number" id="propertyValueIncrease" name="propertyValueIncrease" required><br><br>
+
+        <label for="rentToPriceRatio">租售比 (%):</label>
+        <input type="number" id="rentToPriceRatio" name="rentToPriceRatio" required><br><br>
+
+        <label for="agentFeeRatio">房屋中介费占房租比例 (%):</label>
+        <input type="number" id="agentFeeRatio" name="agentFeeRatio" required><br><br>
+
+        <label for="propertyFeeRatio">物业费占房价比例 (%):</label>
+        <input type="number" id="propertyFeeRatio" name="propertyFeeRatio" required><br><br>
+
+        <label for="negativeGearingRatio">负扣税比例 (%):</label>
+        <input type="number" id="negativeGearingRatio" name="negativeGearingRatio" required><br><br>
+
+        <button type="button" onclick="calculateReturns()">计算收益</button>
+    </form>
+
+    <h2>结果</h2>
+    <div id="results"></div>
+
+    <script>
+        function calculateReturns() {
+            const downPayment = parseFloat(document.getElementById('downPayment').value);
+            const loanRatio = parseFloat(document.getElementById('loanRatio').value) / 100;
+            const loanYears = parseInt(document.getElementById('loanYears').value);
+            const monthlyRepayment = parseFloat(document.getElementById('monthlyRepayment').value);
+            const propertyValueIncrease = parseFloat(document.getElementById('propertyValueIncrease').value) / 100;
+            const rentToPriceRatio = parseFloat(document.getElementById('rentToPriceRatio').value) / 100;
+            const agentFeeRatio = parseFloat(document.getElementById('agentFeeRatio').value) / 100;
+            const propertyFeeRatio = parseFloat(document.getElementById('propertyFeeRatio').value) / 100;
+            const negativeGearingRatio = parseFloat(document.getElementById('negativeGearingRatio').value) / 100;
+
+            let initialPropertyValue = downPayment / (1 - loanRatio);
+            let currentPropertyValue = initialPropertyValue;
+            let totalIncome = 0;
+            let totalExpenses = 0;
+            let totalNetIncome = 0;
+            let totalNegativeGearing = 0;
+
+            let results = `<table border='1'>
+                            <tr>
+                                <th>年份</th>
+                                <th>房屋价值 (AUD)</th>
+                                <th>租金收入 (AUD)</th>
+                                <th>中介费 (AUD)</th>
+                                <th>物业费 (AUD)</th>
+                                <th>贷款还款 (AUD)</th>
+                                <th>总收入 (AUD)</th>
+                                <th>总支出 (AUD)</th>
+                                <th>净收益 (AUD)</th>
+                                <th>负扣税 (AUD)</th>
+                            </tr>`;
+
+            for (let year = 1; year <= loanYears; year++) {
+                currentPropertyValue *= (1 + propertyValueIncrease);
+                let annualRentIncome = currentPropertyValue * rentToPriceRatio;
+                let annualAgentFee = annualRentIncome * agentFeeRatio;
+                let annualPropertyFee = currentPropertyValue * propertyFeeRatio;
+                let annualLoanRepayment = monthlyRepayment * 12;
+
+                let annualIncome = annualRentIncome;
+                let annualExpenses = annualAgentFee + annualPropertyFee + annualLoanRepayment;
+                let annualNetIncome = annualIncome - annualExpenses;
+                let annualNegativeGearing = 0;
+
+                if (annualNetIncome < 0) {
+                    annualNegativeGearing = -annualNetIncome * negativeGearingRatio;
+                    totalNegativeGearing += annualNegativeGearing;
+                }
+
+                totalIncome += annualIncome;
+                totalExpenses += annualExpenses;
+                totalNetIncome += annualNetIncome;
+
+                results += `<tr>
+                            <td>${year}</td>
+                            <td>${currentPropertyValue.toFixed(2)}</td>
+                            <td>${annualRentIncome.toFixed(2)}</td>
+                            <td>${annualAgentFee.toFixed(2)}</td>
+                            <td>${annualPropertyFee.toFixed(2)}</td>
+                            <td>${annualLoanRepayment.toFixed(2)}</td>
+                            <td>${annualIncome.toFixed(2)}</td>
+                            <td>${annualExpenses.toFixed(2)}</td>
+                            <td>${annualNetIncome.toFixed(2)}</td>
+                            <td>${annualNegativeGearing.toFixed(2)}</td>
+                            </tr>`;
+            }
+
+            let totalInvestment = (downPayment + initialPropertyValue) / 2;
+            let comprehensiveReturnRate = ((totalNetIncome + totalNegativeGearing + (currentPropertyValue - initialPropertyValue) + (initialPropertyValue - downPayment)) / totalInvestment) * 100;
+            let annualizedReturnRate = (Math.pow(((comprehensiveReturnRate/100)+1), 1 / loanYears)-1) * 100;
+
+            results += `</table>
+                        <h3>总收入 (AUD): ${totalIncome.toFixed(2)}</h3>
+                        <h3>总支出 (AUD): ${totalExpenses.toFixed(2)}</h3>
+                        <h3>总净收益 (AUD): ${totalNetIncome.toFixed(2)}</h3>
+                        <h3>负扣税总额 (AUD): ${totalNegativeGearing.toFixed(2)}</h3>
+                        <h3>综合投资回报率 (%): ${comprehensiveReturnRate.toFixed(2)}</h3>
+                        <h3>年化复利回报率 (%): ${annualizedReturnRate.toFixed(2)}</h3>`;
+
+            document.getElementById('results').innerHTML = results;
+        }
+    </script>
+</body>
+</html>
